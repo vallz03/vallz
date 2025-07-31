@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vallzada</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjpI8dqtC-h5onw0qKIVM5wFgUAtfiMwU",
+      authDomain: "vallz-3.firebaseapp.com",
+      databaseURL: "https://vallz-3-default-rtdb.firebaseio.com",
+      projectId: "vallz-3",
+      storageBucket: "vallz-3.appspot.com",
+      messagingSenderId: "653310110643",
+      appId: "1:653310110643:web:22cf6bb3d3458e0df84aa5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background-color: #0d0d0d;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      flex-direction: column;
+    }
+    .box { background: #1c1c1c; padding: 30px; border-radius: 12px; width: 100%; max-width: 420px; margin-bottom: 20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    input, select, button {
+      width: 100%; padding: 10px; margin-bottom: 15px;
+      border-radius: 8px; border: none;
+      background: #333; color: white;
+    }
+    button { background: #00d26a; font-weight: bold; cursor: pointer; }
+    .link { text-align: center; margin-top: 15px; color: #00d26a; cursor: pointer; }
+    .title { font-weight: 600; font-size: 20px; margin-bottom: 15px; }
+    .menu-grid, .product-grid {
+      display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px;
+    }
+    .menu-item, .product-item {
+      background: #2e2e2e; padding: 15px; border-radius: 12px;
+      flex: 1 1 120px; text-align: center; cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .menu-item:hover, .product-item:hover { transform: scale(1.05); background: #3a3a3a; }
+    .menu-item img, .product-item img { width: 32px; height: 32px; margin-bottom: 8px; }
+    #checkoutForm label { color: #ccc; font-weight: 500; margin-top: 4px; }
+    #logoutBtn { text-align: center; }
+  </style>
+</head>
+<body>
+
+  <!-- Login -->
+  <div class="box" id="loginBox">
+    <h2>Login</h2>
+    <input type="text" id="loginUsername" placeholder="Username">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="login()">Masuk</button>
+    <div class="link" onclick="showRegister()">Belum punya akun? Daftar</div>
+  </div>
+
+  <!-- Register -->
+  <div class="box" id="registerBox" style="display:none;">
+    <h2>Daftar</h2>
+    <input type="text" id="registerUsername" placeholder="Username">
+    <input type="password" id="registerPassword" placeholder="Password">
+    <button onclick="register()">Daftar</button>
+    <div class="link" onclick="showLogin()">Sudah punya akun? Login</div>
+  </div>
+
+  <!-- Payment Menu -->
+  <div class="box" id="paymentSection" style="display:none;">
+    <div class="title">Pembayaran</div>
+    <div class="menu-grid">
+      <div class="menu-item" onclick="showProducts('pulsa')"><img src="https://img.icons8.com/color/48/000000/phone.png"/>Pulsa</div>
+      <div class="menu-item" onclick="showProducts('pln')"><img src="https://img.icons8.com/color/48/000000/flash-on.png"/>PLN</div>
+      <div class="menu-item" onclick="showProducts('FF')"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScFipPVRz8NRVctybE8BVwFgCZ7eEdOzQWFA&s"/>Free Fire</div>
+      <div class="menu-item" onclick="showProducts('mlbb')"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQbE-Dtqcj7dQEnxMCeTrBxMgB5uHedzsf7A&s"/>Mobile Legend</div>
+    </div>
+    <div class="title" style="margin-top:30px;">Produk</div>
+    <div class="product-grid" id="productGrid"><p style="color:#888;">Klik kategori di atas untuk melihat produk.</p></div>
+  </div>
+
+  <!-- Checkout -->
+  <div class="box" id="checkoutBox" style="display:none;">
+    <div class="title">Checkout Produk</div>
+    <div id="checkoutProductName" style="margin-bottom:10px; color:#ccc;"></div>
+    <form id="checkoutForm">
+      <div id="formGameFields" style="display:none;">
+        <label>Nickname:</label><input type="text" id="nickname" placeholder="Masukkan Nickname">
+        <label>ID Game:</label><input type="text" id="idgame" placeholder="Masukkan ID Game">
+        <label>Server:</label><input type="text" id="server" placeholder="Masukkan Server">
+        <label>No WhatsApp:</label><input type="text" id="whatsapp" placeholder="08xxxxxxxxxx">
+      </div>
+      <div id="formOtherFields" style="display:none;">
+        <label>Nomor HP:</label><input type="text" id="nohp" placeholder="Masukkan No HP">
+      </div>
+      <label>Metode Pembayaran:</label>
+<select id="paymentMethod">
+  <option value="">Pilih</option>
+  <option value="dana">DANA</option>
+  <option value="gopay">GoPay</option>
+  <option value="ovo">OVO</option>
+  <option value="seabank">SeaBank</option>
+  <option value="neobank">NeoBank</option>
+  <option value="jago">Bank Jago</option>
+  <option value="qris">QRIS</option>
+</select>
+<div id="paymentInfo" style="color:#ccc; font-size: 14px; margin-bottom: 10px;"></div>
+
+      <button type="button" onclick="confirmCheckout()">Konfirmasi</button>
+      <div class="link" onclick="hideCheckout()">Batal</div>
+    </form>
+  </div>
+
+  <!-- Logout dan tombol admin/user -->
+  <div id="logoutBtn" style="display:none;"><button onclick="logout()">Logout</button></div>
+  <div style="margin-top:10px; display:none;" id="ordersBtn"><button onclick="showOrders()">Pesanan Saya</button></div>
+  <div style="margin-top:10px; display:none;" id="adminOrdersBtn"><button onclick="showAdminOrders()">Lihat Pesanan User</button></div>
+
+  <!-- Ubah Sandi User -->
+<div class="box" id="changePasswordBox" style="display:none;">
+  <div class="title">Ubah Sandi</div>
+  <input type="password" id="oldPassword" placeholder="Sandi Lama">
+  <input type="password" id="newPassword" placeholder="Sandi Baru">
+  <button onclick="changePassword()">Simpan</button>
+  <div class="link" onclick="changePasswordBox.style.display='none'">Tutup</div>
+</div>
+
+<!-- Ubah Sandi Admin -->
+<div class="box" id="adminChangePasswordBox" style="display:none;">
+  <div class="title">Ubah Sandi Admin</div>
+  <input type="password" id="adminOldPassword" placeholder="Sandi Lama">
+  <input type="password" id="adminNewPassword" placeholder="Sandi Baru">
+  <button onclick="changeAdminPassword()">Simpan</button>
+  <div class="link" onclick="adminChangePasswordBox.style.display='none'">Tutup</div>
+</div>
+
+<!-- List User dan Sandi (admin only) -->
+<div class="box" id="userListBox" style="display:none;">
+  <div class="title">Daftar User & Sandi</div>
+  <div id="userListContent" style="color:#ccc; font-size:14px;"></div>
+  <div class="link" onclick="userListBox.style.display='none'">Tutup</div>
+</div>
+
+<!-- Tombol tambahan -->
+<div style="margin-top:10px; display:none;" id="changePassBtn"><button onclick="changePasswordBox.style.display='block'">Ubah Sandi</button></div>
+<div style="margin-top:10px; display:none;" id="changeAdminPassBtn"><button onclick="adminChangePasswordBox.style.display='block'">Ubah Sandi Admin</button></div>
+<div style="margin-top:10px; display:none;" id="userListBtn"><button onclick="showUserList()">Lihat Daftar User</button></div>
+
+  <!-- Box Pesanan User -->
+  <div class="box" id="ordersBox" style="display:none;">
+    <div class="title">Pesanan Saya</div>
+    <div id="orderList" style="color:#ccc;"></div>
+    <div class="link" onclick="hideOrders()">Tutup</div>
+  </div>
+
+  <!-- Box Admin -->
+  <div class="box" id="adminOrdersBox" style="display:none;">
+    <div class="title">Semua Pesanan</div>
+    <select id="statusFilter" onchange="filterAdminOrders()">
+      <option value="all">Semua Status</option>
+      <option value="pending">Pending</option>
+      <option value="berhasil">Berhasil</option>
+      <option value="gagal">Gagal</option>
+    </select>
+    <div id="adminOrderList" style="margin-top:15px; color:#ccc;"></div>
+    <div class="link" onclick="hideAdminOrders()">Tutup</div>
+  </div>
+
+<script>
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "admin123";
+let currentUser = "";
+let selectedProduct = null;
+
+<!--list produk-->
+const produk = {
+  pulsa: [{ nama: "Pulsa 10.000", harga: "Rp11.000" }, { nama: "Pulsa 20.000", harga: "Rp21.000" }],
+  pln: [{ nama: "Token 20.000", harga: "Rp20.500" }, { nama: "Token 50.000", harga: "Rp50.000" }],
+  FF: [{ nama: "💎5", harga: "Rp1.000" }, { nama: "💎12", harga: "Rp2.000" }],
+  mlbb: [{ nama: "86 Diamond", harga: "Rp20.000" }, { nama: "172 Diamond", harga: "Rp39.000" }]
+};
+const paymentAccounts = {
+  dana: "08**** (A/N R****** I**** A******)",
+  gopay: "08**** (A/N R****** I**** A******)",
+  ovo: "08***** (A/N R****** I**** A******)",
+  seabank: "1234567890 (A/N Vallz)",
+  neobank: "9876543210 (A/N Vallz)",
+  jago: "100200300 (A/N Vallz)",
+  qris: "https://files.catbox.moe/t3md8b.jpg" // bisa gambar atau teks
+};
+
+function showRegister() {
+  loginBox.style.display = "none"; registerBox.style.display = "block";
+}
+function showLogin() {
+  registerBox.style.display = "none"; loginBox.style.display = "block";
+}
+function register() {
+  const user = registerUsername.value.trim();
+  const pass = registerPassword.value.trim();
+  if (!user || !pass) return alert("Isi semua kolom!");
+  db.ref("users/" + user).once("value", snap => {
+    if (snap.exists()) return alert("Username sudah terdaftar!");
+    db.ref("users/" + user).set({ password: pass }, () => {
+      alert("Berhasil daftar!"); showLogin();
+
+      // Setelah verifikasi login
+if (role === 'user') {
+  document.getElementById("changePassBtn").style.display = "block";
+}
+if (role === 'admin') {
+  document.getElementById("changeAdminPassBtn").style.display = "block";
+  document.getElementById("userListBtn").style.display = "block";
+}
+
+    });
+  });
+}
+function login() {
+  const user = loginUsername.value.trim();
+  const pass = loginPassword.value.trim();
+  if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+    currentUser = user;
+    showPayment(); logoutBtn.style.display = "block"; adminOrdersBtn.style.display = "block";
+    alert("Login sebagai admin"); return;
+    changeAdminPassBtn.style.display = "block";
+userListBtn.style.display = "block";
+  }
+  db.ref("users/" + user).once("value", snap => {
+    if (snap.exists() && snap.val().password === pass) {
+      currentUser = user;
+      showPayment(); logoutBtn.style.display = "block"; ordersBtn.style.display = "block";
+      alert("Login berhasil");
+      changePassBtn.style.display = "block";
+    } else alert("Username atau password salah!");
+  });
+}
+function logout() {
+  currentUser = "";
+  loginBox.style.display = "block";
+  registerBox.style.display = paymentSection.style.display = logoutBtn.style.display =
+    adminOrdersBtn.style.display = ordersBtn.style.display =
+    changePassBtn.style.display = changeAdminPassBtn.style.display = userListBtn.style.display = "none";
+}
+function showPayment() {
+  loginBox.style.display = registerBox.style.display = "none";
+  paymentSection.style.display = "block";
+}
+function showProducts(kat) {
+  const grid = productGrid;
+  grid.innerHTML = "";
+  (produk[kat] || []).forEach(p => {
+    const div = document.createElement("div");
+    div.className = "product-item";
+    div.innerHTML = `<strong>${p.nama}</strong><br/><small>${p.harga}</small>`;
+    div.onclick = () => showCheckout(p);
+    grid.appendChild(div);
+  });
+}
+function showCheckout(p) {
+  selectedProduct = p;
+  checkoutBox.style.display = "block";
+  checkoutProductName.innerHTML = `<strong>${p.nama}</strong> - <small>${p.harga}</small>`;
+  const isGame = ['FF','mlbb'].some(k => produk[k].some(x => x.nama === p.nama));
+  formGameFields.style.display = isGame ? "block" : "none";
+  formOtherFields.style.display = isGame ? "none" : "block";
+  nickname.value = idgame.value = server.value = whatsapp.value = nohp.value = "";
+}
+paymentMethod.onchange = () => {
+  const method = paymentMethod.value;
+  if (method === "qris") {
+    paymentInfo.innerHTML = `<img src="${paymentAccounts.qris}" alt="QRIS" style="max-width:100%;border-radius:10px;margin-top:10px;">`;
+  } else if (paymentAccounts[method]) {
+    paymentInfo.innerHTML = `Transfer ke: <strong>${paymentAccounts[method]}</strong>`;
+  } else {
+    paymentInfo.innerHTML = "";
+  }
+};
+function hideCheckout() { checkoutBox.style.display = "none"; }
+function confirmCheckout() {
+  const isGame = ['FF','mlbb'].some(k => produk[k].some(p => p.nama === selectedProduct.nama));
+  let kontak = "";
+  if (isGame) {
+    if (!nickname.value || !idgame.value || !server.value || !whatsapp.value) return alert("Lengkapi data.");
+    kontak = `Nickname: ${nickname.value}, ID: ${idgame.value}, Server: ${server.value}, WA: ${whatsapp.value}`;
+  } else {
+    if (!nohp.value) return alert("Masukkan nomor HP.");
+    kontak = nohp.value;
+  }
+  const orderData = {
+    nama: selectedProduct.nama, harga: selectedProduct.harga,
+    kontak, status: "pending", waktu: new Date().toLocaleString()
+  };
+  db.ref("orders/" + currentUser).push(orderData, () => {
+    alert("Pesanan berhasil disimpan."); hideCheckout();
+  });
+}
+function showOrders() {
+  db.ref("orders/" + currentUser).once("value", snap => {
+    const list = orderList;
+    if (!snap.exists()) return list.innerHTML = "<p>Belum ada pesanan.</p>";
+
+    let html = "";
+    snap.forEach(oSnap => {
+      const o = oSnap.val();
+      const isGame = o.kontak.includes("Nickname:");
+      html += `
+        <div style="margin-bottom:15px;">
+          <strong>Produk:</strong> ${o.nama} <br/>
+          <strong>Harga:</strong> ${o.harga} <br/>
+          <strong>Metode:</strong> ${o.metode?.toUpperCase() || "-"} <br/>
+          <strong>Kontak:</strong><br/>
+          ${isGame ? o.kontak.replace(/, /g, "<br/>") : `No HP: <a href="https://wa.me/${formatWhatsApp(o.kontak)}" target="_blank">${o.kontak}</a>`}<br/>
+          <strong>Status:</strong> ${o.status.toUpperCase()} <br/>
+          <small>${o.waktu}</small>
+        </div>
+        <hr/>
+      `;
+    });
+    list.innerHTML = html;
+    ordersBox.style.display = "block";
+  });
+}
+function hideOrders() { ordersBox.style.display = "none"; }
+function showAdminOrders() {
+  adminOrdersBox.style.display = "block";
+  filterAdminOrders();
+}
+function hideAdminOrders() {
+  adminOrdersBox.style.display = "none";
+}
+function filterAdminOrders() {
+  const f = statusFilter.value;
+  db.ref("orders").once("value", snap => {
+    const container = adminOrderList;
+    if (!snap.exists()) return container.innerHTML = "<p>Tidak ada pesanan.</p>";
+    let html = "";
+    snap.forEach(userSnap => {
+      const user = userSnap.key;
+      userSnap.forEach(oSnap => {
+        const o = oSnap.val();
+        if (f !== "all" && o.status !== f) return;
+        const key = oSnap.key;
+        let kontakHtml = o.kontak.includes("WA:")
+          ? `WA: <a href="https://wa.me/${formatWhatsApp(o.kontak.split("WA:")[1].trim())}" target="_blank">${o.kontak}</a>`
+          : `No HP: <a href="https://wa.me/${formatWhatsApp(o.kontak)}" target="_blank">${o.kontak}</a>`;
+        html += `<div><strong>${o.nama}</strong> (${o.harga})<br/>User: ${user}<br/>${kontakHtml}<br/>
+        Status: <select onchange="updateStatus('${user}', '${key}', this.value)">
+        <option value="pending" ${o.status==="pending"?"selected":""}>Pending</option>
+        <option value="berhasil" ${o.status==="berhasil"?"selected":""}>Berhasil</option>
+        <option value="gagal" ${o.status==="gagal"?"selected":""}>Gagal</option>
+        </select><br/><small>${o.waktu}</small></div><hr/>`;
+      });
+    });
+    container.innerHTML = html;
+  });
+}
+function updateStatus(user, key, status) {
+  db.ref(`orders/${user}/${key}`).update({ status }, () => {
+    filterAdminOrders();
+  });
+}
+function formatWhatsApp(n) {
+  const c = n.replace(/\D/g, "");
+  return c.startsWith("0") ? "62" + c.slice(1) : c;
+}
+function confirmCheckout() {
+  const isGame = ['FF','mlbb'].some(k => produk[k].some(p => p.nama === selectedProduct.nama));
+  let kontak = "";
+  const method = paymentMethod.value;
+  if (!method) return alert("Pilih metode pembayaran.");
+
+  if (isGame) {
+    if (!nickname.value || !idgame.value || !server.value || !whatsapp.value) return alert("Lengkapi data.");
+    kontak = `Nickname: ${nickname.value}, ID: ${idgame.value}, Server: ${server.value}, WA: ${whatsapp.value}`;
+  } else {
+    if (!nohp.value) return alert("Masukkan nomor HP.");
+    kontak = nohp.value;
+  }
+
+  const orderData = {
+    nama: selectedProduct.nama,
+    harga: selectedProduct.harga,
+    kontak,
+    status: "pending",
+    waktu: new Date().toLocaleString(),
+    metode: method
+  };
+
+  db.ref("orders/" + currentUser).push(orderData, () => {
+    alert("Pesanan berhasil disimpan."); hideCheckout();
+  });
+}
+function filterAdminOrders() {
+  const f = statusFilter.value;
+  db.ref("orders").once("value", snap => {
+    const container = adminOrderList;
+    if (!snap.exists()) return container.innerHTML = "<p>Tidak ada pesanan.</p>";
+
+    let html = "";
+    snap.forEach(userSnap => {
+      const user = userSnap.key;
+      userSnap.forEach(oSnap => {
+        const o = oSnap.val();
+        if (f !== "all" && o.status !== f) return;
+        const key = oSnap.key;
+        const isGame = o.kontak.includes("Nickname:");
+        html += `
+          <div style="margin-bottom:15px;">
+            <strong>User:</strong> ${user} <br/>
+            <strong>Produk:</strong> ${o.nama} (${o.harga})<br/>
+            <strong>Metode:</strong> ${o.metode?.toUpperCase() || "-"}<br/>
+            <strong>Kontak:</strong><br/>
+            ${isGame ? o.kontak.replace(/, /g, "<br/>") : `No HP: <a href="https://wa.me/${formatWhatsApp(o.kontak)}" target="_blank">${o.kontak}</a>`}<br/>
+            <strong>Status:</strong>
+            <select onchange="updateStatus('${user}', '${key}', this.value)">
+              <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+              <option value="berhasil" ${o.status === "berhasil" ? "selected" : ""}>Berhasil</option>
+              <option value="gagal" ${o.status === "gagal" ? "selected" : ""}>Gagal</option>
+            </select><br/>
+            <small>${o.waktu}</small>
+          </div>
+          <hr/>
+        `;
+      });
+    });
+    container.innerHTML = html;
+  });
+}
+function changePassword() {
+  const oldPass = oldPassword.value.trim();
+  const newPass = newPassword.value.trim();
+  if (!oldPass || !newPass) return alert("Isi semua kolom.");
+  db.ref("users/" + currentUser).once("value", snap => {
+    if (!snap.exists()) return alert("Akun tidak ditemukan.");
+    if (snap.val().password !== oldPass) return alert("Sandi lama salah.");
+    db.ref("users/" + currentUser).update({ password: newPass }, () => {
+      alert("Sandi berhasil diubah.");
+      changePasswordBox.style.display = "none";
+    });
+  });
+}
+
+function changeAdminPassword() {
+  const oldPass = adminOldPassword.value.trim();
+  const newPass = adminNewPassword.value.trim();
+  if (oldPass !== ADMIN_PASSWORD) return alert("Sandi lama admin salah.");
+  if (!newPass) return alert("Sandi baru tidak boleh kosong.");
+  // karena hardcoded, hanya bisa tampil alert
+  alert("Sandi admin tidak dapat diubah karena disimpan di kode. Ubah langsung di file HTML: ganti nilai ADMIN_PASSWORD.");
+}
+
+function showUserList() {
+  db.ref("users").once("value", snap => {
+    if (!snap.exists()) return userListContent.innerHTML = "<p>Tidak ada data user.</p>";
+    let html = "";
+    snap.forEach(userSnap => {
+      const uname = userSnap.key;
+      const upass = userSnap.val().password;
+      html += `<div><strong>${uname}</strong>: ${upass}</div>`;
+    });
+    userListContent.innerHTML = html;
+    userListBox.style.display = "block";
+  });
+}
+</script>
+</body>
+</html>
